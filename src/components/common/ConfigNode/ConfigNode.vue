@@ -1,39 +1,45 @@
 <template>
   <div class="config-node" :class="{ 'change': hasChange }">
-    <div class="config-title">
+    <div v-if="showTitle" class="config-title">
       {{ node.title }}
     </div>
     <div class="config-content">
       <!-- 值修改时的左侧小绿条 -->
-      <div class="change-flag">
+      <div v-if="showChange" class="change-flag">
         <div class="change-detail">
           <config-node-change-detail :node="node" :current-value="nodeValue" />
         </div>
       </div>
       <div class="config-describe tip">
-        <v-checkbox
+        <v-switch
           v-if="node.inputType == 'switch'"
           color="primary"
           :hide-details="true"
           :label="node.describe"
           :model-value="nodeValue == true || nodeValue == 'true'"
-          :disabled="node.readonly"
+          :readonly="node.readonly || readOnly"
+          :rules="validators"
           @update:model-value="nodeValue = $event; updateValue($event)"
         />
-        <multi-line-text v-else :text="node.describe" />
+        <multi-line-text v-if="showDescribe" :text="node.describe" />
       </div>
       <template v-if="node.inputType == 'text'">
         <text-input
+          :rules="validators"
           :model-value="nodeValue"
           class="config-simple-input"
-          :readonly="node.readonly"
+          :readonly="node.readonly || readOnly"
+          :hide-details="dense"
           :type="node.mask ? 'password': 'text'"
+          :class="{'no-margin no-padding': dense}"
           @update:model-value="nodeValue = $event;updateValue(nodeValue)"
         />
       </template>
       <template v-if="node.inputType == 'select'">
         <form-select
           v-model="nodeValue"
+          :disabled="node.disabled || readOnly"
+          :rules="validators"
           :items="selectOptions"
           class="config-simple-input"
           @change="nodeValue = $event.value; updateValue($event.value)"
@@ -55,6 +61,26 @@ const props = defineProps({
   node: {
     type: Object as PropType<ConfigNodeModel>,
     default: () => { return {} }
+  },
+  showDescribe: {
+    type: Boolean,
+    default: true
+  },
+  showTitle: {
+    type: Boolean,
+    default: true
+  },
+  showChange: {
+    type: Boolean,
+    default: true
+  },
+  dense: {
+    type: Boolean,
+    default: false
+  },
+  readOnly: {
+    type: Boolean,
+    default: false
   }
 })
 const nodeValue = ref('') as Ref<any>
@@ -67,6 +93,19 @@ const selectOptions = computed(() => {
     return []
   }
 })
+
+const validators:ValidateRule[] = [
+  (val) => {
+    if (props.node.required) {
+      if (!val) {
+        return (props.node.title || props.node.name) + '不能为空！' 
+      }
+      return true
+    } else {
+      return true
+    }
+  }
+]
 
 /**
  * 值是否被修改过
@@ -107,7 +146,9 @@ onMounted(() => {
 
 <script lang="ts">
 import { ConfigNodeModel } from '@/core/model'
-import { defineComponent, defineProps, defineEmits, Ref, ref, PropType, onMounted, watch, computed } from 'vue'
+import { ValidateRule } from '@/core/model/component/type'
+import { ValidatorFunction } from '@/utils/FormUtils'
+import { defineComponent, defineProps, defineEmits, Ref, ref, PropType, onMounted, watch, computed, readonly } from 'vue'
 
 export default defineComponent({
   name: 'ConfigNode'
@@ -116,7 +157,7 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .config-title {
-  font-weight: 600;
+  font-weight: bold;
   color: rgba(var(--v-theme-primary));
 }
 

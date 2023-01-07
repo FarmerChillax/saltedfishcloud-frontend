@@ -36,6 +36,7 @@
               :file-name="file.name"
               :dir="false"
               :show-thumb="true"
+              :custom-thumbnail-url="thumbnailUrlGenerator && thumbnailUrlGenerator(file)"
             />
           </div>
           <div class="bar-title text-truncate">
@@ -103,6 +104,20 @@ const props = defineProps({
   imageIndex: {
     type: Number,
     default: 0
+  },
+  /**
+   * 主图的url生成策略函数，默认使用根据md5加载
+   */
+  urlGenerator: {
+    type: Function as PropType<((fileInfo: FileInfo) => string)>,
+    default: undefined
+  },
+  /**
+   * 缩略图的自定义url生成器
+   */
+  thumbnailUrlGenerator: {
+    type: Function as PropType<((fileInfo: FileInfo) => string)>,
+    default: undefined
   }
 })
 
@@ -129,7 +144,12 @@ watch(() => props.imageIndex, () => {
  */
 const imgSrc = computed(() => {
   const targetFile = props.fileList[activeIdx.value]
-  return StringUtils.appendPath(API.getDefaultPrefix(), API.resource.downloadFileByMD5(targetFile.md5, targetFile.name).url)
+  if (props.urlGenerator) {
+    return props.urlGenerator(targetFile)
+  } else {
+    return StringUtils.appendPath(API.getDefaultPrefix(), API.resource.downloadFileByMD5(targetFile.md5, targetFile.name).url)
+  }
+  
 })
 
 /**

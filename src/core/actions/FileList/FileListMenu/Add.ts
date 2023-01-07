@@ -8,6 +8,9 @@ const addGroup: MenuGroup<FileListContext> = {
   // 新增菜单
   id: 'add',
   name: '新增',
+  renderOn(ctx?) {
+    return ctx?.selectFileList.length == 0
+  },
   items: [
     {
       id: 'upload',

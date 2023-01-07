@@ -36,6 +36,7 @@
           </form-grid>
         </v-card-content>
         <v-card-content v-else>
+          <!-- 文件提取成功，文件浏览界面 -->
           <file-share-dir-browser v-if="shareInfo.type == 'DIR'" :share-info="shareInfo" />
           <file-share-file-extractor v-if="shareInfo.type == 'FILE'" :share-info="shareInfo" />
         </v-card-content>
@@ -76,6 +77,14 @@ const props = defineProps({
     type: String,
     default: undefined
   }
+})
+provide('protocol', 'share')
+provide('protocolParams', () => {
+  return {
+    code: props.extractCode,
+    vid: props.vid,
+    id: props.sid
+  } as ProtocolParams
 })
 const toDate = StringFormatter.toDate
 const inputExtractCode = ref('')
@@ -120,10 +129,11 @@ import { ShareInfo } from '@/api/share'
 import { ShareService } from '@/core/serivce/ShareService'
 import { LoadingManager } from '@/utils/LoadingManager'
 import { MethodInterceptor } from '@/utils/MethodInterceptor'
-import { defineComponent, defineProps, defineEmits, Ref, ref, PropType, onMounted } from 'vue'
+import { defineComponent, defineProps, defineEmits, Ref, ref, PropType, onMounted, provide } from 'vue'
 import { StringFormatter } from '@/utils/StringFormatter'
 import SfcUtils from '@/utils/SfcUtils'
 import { AxiosError } from 'axios'
+import { ProtocolParams } from '@/core/model'
 
 export default defineComponent({
   name: 'FileShareExtractor'

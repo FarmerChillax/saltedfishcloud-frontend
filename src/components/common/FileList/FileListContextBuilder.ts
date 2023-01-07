@@ -1,20 +1,25 @@
 import FileUtils from '@/utils/FileUtils'
 import { ExtractPropTypes, reactive, Ref } from 'vue'
-import { FileListContext, FileInfo } from '@/core/model'
+import { FileListContext, FileInfo, ProtocolParams } from '@/core/model'
 import propsOptions from './props'
 import { FileSystemHandler } from '@/core/serivce/FileSystemHandler'
+import SfcUtils from '@/utils/SfcUtils'
+import API from '@/api'
 
 export interface FileListContextBuilderOptions {
   props: Readonly<ExtractPropTypes<typeof propsOptions>>,
   emits: any
   handler: Ref<FileSystemHandler> | undefined,
-  rename(name: string, md5: string): Promise<string>
+  rename(name: string, md5: string): Promise<string>,
+  protocol: string,
+  protocolParams: () => ProtocolParams
 }
 
 const FileListContextBuilder = {
   getFileListContext(opt: FileListContextBuilderOptions): FileListContext {
     const { props, emits, handler, rename} = opt
     return reactive({
+      protocol: opt.protocol,
       uid: props.uid,
       fileList: props.fileList,
       enableFeature: [''],
@@ -22,6 +27,23 @@ const FileListContextBuilder = {
       name: '',
       selectFileList: [],
       path: props.path,
+      getProtocolParams() {
+        return opt.protocolParams()
+      },
+      getFileUrl(file) {
+        if (handler) {
+          return handler?.value.getFileUrl(props.path, file)
+        } else if (file.md5) {
+          return SfcUtils.getApiUrl(API.resource.downloadFileByMD5(file.md5, file.name))
+        } else {
+          console.log('无法获取该文件的url：',file)
+          throw new Error('无法获取文件url：' + file.name)
+          
+        }
+      },
+      getThumbnailUrl(file) {
+        return handler?.value.getCustomThumbnailUrl(props.path, file)
+      },
       modelHandler: {
         async mkdir(name) {
           await handler?.value.mkdir(props.path, name)
